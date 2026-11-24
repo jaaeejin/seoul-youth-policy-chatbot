@@ -3,6 +3,8 @@
 #   git clone https://github.com/jaaeejin/seoul-youth-policy-chatbot.git
 #   cd seoul-youth-policy-chatbot && bash scripts/deploy.sh
 set -euo pipefail
+# CloudShell 기본 로캘에서는 템플릿 한글이 ??로 깨지므로 UTF-8로 읽게 한다
+export AWS_CLI_FILE_ENCODING=UTF-8 LANG=C.UTF-8 LC_ALL=C.UTF-8 PYTHONUTF8=1
 
 REGION="${AWS_REGION:-ap-northeast-2}"
 PROJECT="yp-chatbot"
