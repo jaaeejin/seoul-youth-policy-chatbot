@@ -6,7 +6,7 @@
   3. 찾지 못하면 추측하지 않고 "등록된 공고에서 찾지 못했다"고 안내한다.
   4. 가린 질문과 응답 시간을 익명 기록으로 저장한다(90일 뒤 TTL 삭제).
 
-3주차 이후: 2번을 S3 Vectors 검색 + Bedrock(Claude) 근거 기반 답변으로 바꾼다.
+3주차 이후: 2번을 S3 Vectors 검색(Titan V2 임베딩) + Bedrock Nova Lite 근거 기반 답변으로 바꾼다.
 """
 import json
 import os

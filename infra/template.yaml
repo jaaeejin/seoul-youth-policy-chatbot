@@ -10,6 +10,16 @@ Parameters:
   Stage:
     Type: String
     Default: dev
+  # 실습 규모라 저렴한 모델을 쓴다 (1주차 피드백 반영)
+  EmbedModelId:
+    Type: String
+    Default: amazon.titan-embed-text-v2:0
+  EmbedDimension:
+    Type: Number
+    Default: 1024
+  ChatModelId:
+    Type: String
+    Default: apac.amazon.nova-lite-v1:0
 
 Resources:
   # ---------- 문서 저장소 (raw/ · processed/) ----------
@@ -185,8 +195,11 @@ Resources:
                 Effect: Allow
                 Action: [bedrock:InvokeModel]
                 Resource:
-                  - !Sub "arn:aws:bedrock:*::foundation-model/*"
-                  - !Sub "arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*"
+                  # 임베딩: Titan Text Embeddings V2 (서울 리전 직접 호출)
+                  - !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/${EmbedModelId}"
+                  # 생성: Nova Lite APAC 추론 프로필과, 프로필이 보내는 APAC 리전의 기반 모델
+                  - !Sub "arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/${ChatModelId}"
+                  - "arn:aws:bedrock:ap-*::foundation-model/amazon.nova-lite-v1:0"
               - Sid: QueryVectors
                 Effect: Allow
                 Action: [s3vectors:QueryVectors, s3vectors:GetVectors]
@@ -224,6 +237,14 @@ Resources:
                 Effect: Allow
                 Action: [dynamodb:PutItem, dynamodb:UpdateItem]
                 Resource: !GetAtt PoliciesTable.Arn
+              - Sid: EmbedChunks
+                Effect: Allow
+                Action: [bedrock:InvokeModel]
+                Resource: !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/${EmbedModelId}"
+              - Sid: PutVectors
+                Effect: Allow
+                Action: [s3vectors:PutVectors, s3vectors:DeleteVectors]
+                Resource: !Sub "arn:aws:s3vectors:${AWS::Region}:${AWS::AccountId}:bucket/${ProjectName}-vectors-${AWS::AccountId}/*"
 
   # ---------- Lambda ----------
   PoliciesLogGroup:
@@ -269,6 +290,11 @@ Resources:
           POLICIES_TABLE: !Ref PoliciesTable
           CHATLOGS_TABLE: !Ref ChatLogsTable
           LOG_TTL_DAYS: "90"
+          EMBED_MODEL_ID: !Ref EmbedModelId
+          EMBED_DIMENSION: !Ref EmbedDimension
+          CHAT_MODEL_ID: !Ref ChatModelId
+          VECTOR_BUCKET: !Sub "${ProjectName}-vectors-${AWS::AccountId}"
+          VECTOR_INDEX: policy-chunks
 
   # ---------- HTTP API (API Gateway v2) ----------
   HttpApi:

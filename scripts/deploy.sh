@@ -46,19 +46,24 @@ echo "== 5. 문서 버킷 폴더(raw/ · processed/) 만들기"
 aws s3api put-object --bucket "$DOCS_BUCKET" --key raw/ >/dev/null
 aws s3api put-object --bucket "$DOCS_BUCKET" --key processed/ >/dev/null
 
-echo "== 5-1. 벡터 저장소(S3 Vectors) 만들기 — 3주차 적재용 빈 인덱스"
+echo "== 5-1. 벡터 저장소(S3 Vectors) — 3주차 적재용 인덱스 (Titan V2, 1024차원)"
 VBUCKET="${PROJECT}-vectors-${ACCOUNT}"
-if aws s3vectors get-vector-bucket --vector-bucket-name "$VBUCKET" --region "$REGION" >/dev/null 2>&1; then
-  echo "이미 있음: ${VBUCKET}"
-elif aws s3vectors create-vector-bucket --vector-bucket-name "$VBUCKET" --region "$REGION" >/dev/null 2>&1; then
-  # Cohere Embed v4 기본 차원 1536, 코사인 거리. 원문 조각은 검색 필터에 쓰지 않는 메타데이터로 둔다
-  aws s3vectors create-index --vector-bucket-name "$VBUCKET" --index-name policy-chunks \
-    --data-type float32 --dimension 1536 --distance-metric cosine \
-    --metadata-configuration '{"nonFilterableMetadataKeys":["text"]}' --region "$REGION" >/dev/null
-  echo "만듦: ${VBUCKET}/policy-chunks"
-else
-  echo "S3 Vectors를 만들지 못함(리전·CLI 버전 확인 필요). 다음 단계로 넘어감"
+VINDEX="policy-chunks"
+DIM=1024   # Titan Text Embeddings V2 (template.yaml의 EmbedDimension과 같게)
+if ! aws s3vectors get-vector-bucket --vector-bucket-name "$VBUCKET" --region "$REGION" >/dev/null 2>&1; then
+  aws s3vectors create-vector-bucket --vector-bucket-name "$VBUCKET" --region "$REGION" >/dev/null
 fi
+CUR_DIM="$(aws s3vectors get-index --vector-bucket-name "$VBUCKET" --index-name "$VINDEX" --region "$REGION"   --query 'index.dimension' --output text 2>/dev/null || echo none)"
+if [ "$CUR_DIM" != "$DIM" ]; then
+  if [ "$CUR_DIM" != "none" ]; then
+    # 차원은 바꿀 수 없어서 다시 만든다. 다시 적재하면 되는 단계(3주차 전)에서만 쓴다
+    echo "인덱스 차원 ${CUR_DIM} → ${DIM}: 인덱스를 다시 만듦"
+    aws s3vectors delete-index --vector-bucket-name "$VBUCKET" --index-name "$VINDEX" --region "$REGION"
+  fi
+  # 코사인 거리. 원문 조각은 검색 필터에 쓰지 않는 메타데이터로 둔다
+  aws s3vectors create-index --vector-bucket-name "$VBUCKET" --index-name "$VINDEX"     --data-type float32 --dimension "$DIM" --distance-metric cosine     --metadata-configuration '{"nonFilterableMetadataKeys":["text"]}' --region "$REGION" >/dev/null
+fi
+aws s3vectors get-index --vector-bucket-name "$VBUCKET" --index-name "$VINDEX" --region "$REGION"   --query 'index.{index:indexName,dimension:dimension,metric:distanceMetric}' --output text
 
 echo "== 6. 웹 화면 올리기 → ${WEB_BUCKET}"
 printf 'window.APP_CONFIG = { apiUrl: "%s" };\n' "$API_URL" > /tmp/config.js

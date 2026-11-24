@@ -26,6 +26,15 @@ S3 문서 버킷 raw/ · processed/ (버전 관리, KMS 암호화, 퍼블릭 차
 | `scripts/` | 배포 · 데이터 넣기 · 정리 스크립트 |
 | `tests/` | AWS 없이 도는 단위 테스트 |
 
+## 모델 (실습 규모라 저렴한 모델 사용)
+
+| 용도 | 모델 | 호출 방법 |
+|---|---|---|
+| 임베딩 | Amazon Titan Text Embeddings V2 (1024차원) | `amazon.titan-embed-text-v2:0` — 서울 리전 직접 호출 |
+| 답변 생성 | Amazon Nova Lite | `apac.amazon.nova-lite-v1:0` — 아시아 태평양 리전 안에서 처리 |
+
+모델 ID는 `infra/template.yaml`의 파라미터(`EmbedModelId`, `ChatModelId`)로 바꿀 수 있다.
+
 ## 배포 (AWS CloudShell, 서울 리전)
 
 ```bash
@@ -52,4 +61,4 @@ python tests/test_logic.py
 
 - [x] 1주차: 서비스 기획 · 아키텍처 설계
 - [x] 2주차: AWS 기본 환경 · 개발 환경 · 테스트 API 배포
-- [ ] 3주차~: 문서 수집 · 분할 · 임베딩(Bedrock Cohere Embed v4) · S3 Vectors 적재, Claude 근거 기반 답변
+- [ ] 3주차~: 문서 수집 · 분할 · 임베딩(Titan Text Embeddings V2) · S3 Vectors 적재, Nova Lite 근거 기반 답변
