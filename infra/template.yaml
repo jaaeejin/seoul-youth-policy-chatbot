@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >
-  서울 청년정책 안내 챗봇 - 2주차 기본 환경
-  (문서 저장소 S3, 정책·기록 DynamoDB, 최소 권한 IAM 역할, Lambda + HTTP API, S3 + CloudFront 프론트엔드)
+  Seoul youth policy RAG chatbot - week 2 base environment
+  (S3 docs store, DynamoDB, least-privilege IAM roles, Lambda + HTTP API, S3 + CloudFront web)
 
 Parameters:
   ProjectName:
