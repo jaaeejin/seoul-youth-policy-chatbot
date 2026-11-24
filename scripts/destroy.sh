@@ -15,6 +15,10 @@ b.object_versions.delete()
 PY
 }
 
+VBUCKET="yp-chatbot-vectors-${ACCOUNT}"
+aws s3vectors delete-index --vector-bucket-name "$VBUCKET" --index-name policy-chunks --region "$REGION" 2>/dev/null || true
+aws s3vectors delete-vector-bucket --vector-bucket-name "$VBUCKET" --region "$REGION" 2>/dev/null || true
+
 empty_bucket "yp-chatbot-docs-${ACCOUNT}-${REGION}"
 empty_bucket "yp-chatbot-web-${ACCOUNT}-${REGION}"
 aws cloudformation delete-stack --region "$REGION" --stack-name "$STACK"

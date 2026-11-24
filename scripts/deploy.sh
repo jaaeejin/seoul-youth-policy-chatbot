@@ -46,6 +46,20 @@ echo "== 5. 문서 버킷 폴더(raw/ · processed/) 만들기"
 aws s3api put-object --bucket "$DOCS_BUCKET" --key raw/ >/dev/null
 aws s3api put-object --bucket "$DOCS_BUCKET" --key processed/ >/dev/null
 
+echo "== 5-1. 벡터 저장소(S3 Vectors) 만들기 — 3주차 적재용 빈 인덱스"
+VBUCKET="${PROJECT}-vectors-${ACCOUNT}"
+if aws s3vectors get-vector-bucket --vector-bucket-name "$VBUCKET" --region "$REGION" >/dev/null 2>&1; then
+  echo "이미 있음: ${VBUCKET}"
+elif aws s3vectors create-vector-bucket --vector-bucket-name "$VBUCKET" --region "$REGION" >/dev/null 2>&1; then
+  # Cohere Embed v4 기본 차원 1536, 코사인 거리. 원문 조각은 검색 필터에 쓰지 않는 메타데이터로 둔다
+  aws s3vectors create-index --vector-bucket-name "$VBUCKET" --index-name policy-chunks \
+    --data-type float32 --dimension 1536 --distance-metric cosine \
+    --metadata-configuration '{"nonFilterableMetadataKeys":["text"]}' --region "$REGION" >/dev/null
+  echo "만듦: ${VBUCKET}/policy-chunks"
+else
+  echo "S3 Vectors를 만들지 못함(리전·CLI 버전 확인 필요). 다음 단계로 넘어감"
+fi
+
 echo "== 6. 웹 화면 올리기 → ${WEB_BUCKET}"
 printf 'window.APP_CONFIG = { apiUrl: "%s" };\n' "$API_URL" > /tmp/config.js
 aws s3 cp frontend/index.html "s3://${WEB_BUCKET}/index.html" --content-type "text/html; charset=utf-8" >/dev/null
