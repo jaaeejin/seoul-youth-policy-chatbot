@@ -32,7 +32,8 @@ aws cloudformation package --region "$REGION" \
 echo "== 3. CloudFormation 배포: ${STACK} (CloudFront 생성에 몇 분 걸림)"
 aws cloudformation deploy --region "$REGION" \
   --template-file /tmp/packaged.yaml --stack-name "$STACK" \
-  --capabilities CAPABILITY_NAMED_IAM --no-fail-on-empty-changeset \n  --tags Project="$PROJECT" Stage="$STAGE" Course=cloud-architecture
+  --capabilities CAPABILITY_NAMED_IAM --no-fail-on-empty-changeset \
+  --tags Project="$PROJECT" Stage="$STAGE" Course=cloud-architecture
 
 out() { aws cloudformation describe-stacks --region "$REGION" --stack-name "$STACK" \
   --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text; }
