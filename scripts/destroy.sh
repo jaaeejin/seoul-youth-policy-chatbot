@@ -7,7 +7,7 @@ ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
 
 empty_bucket() {  # 버전 관리가 켜진 버킷도 비운다
   local b="$1"
-  aws s3api head-bucket --bucket "$b" 2>/dev/null || return 0
+  aws s3api head-bucket --bucket "$b" >/dev/null 2>&1 || return 0
   python3 - "$b" "$REGION" <<'PY'
 import sys, boto3
 b = boto3.resource("s3", region_name=sys.argv[2]).Bucket(sys.argv[1])

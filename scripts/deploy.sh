@@ -16,7 +16,7 @@ ARTIFACTS="${PROJECT}-artifacts-${ACCOUNT}-${REGION}"
 cd "$(dirname "$0")/.."
 
 echo "== 1. 배포 파일 버킷 준비: ${ARTIFACTS}"
-if ! aws s3api head-bucket --bucket "$ARTIFACTS" 2>/dev/null; then
+if ! aws s3api head-bucket --bucket "$ARTIFACTS" >/dev/null 2>&1; then
   aws s3api create-bucket --bucket "$ARTIFACTS" --region "$REGION" \
     --create-bucket-configuration LocationConstraint="$REGION" >/dev/null
   aws s3api put-public-access-block --bucket "$ARTIFACTS" \
