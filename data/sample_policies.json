@@ -1,0 +1,57 @@
+[
+  {
+    "policyId": "seoul-youth-rent-2026",
+    "name": "서울시 청년월세지원",
+    "agency": "서울특별시 청년정책과",
+    "year": 2026,
+    "category": "주거",
+    "keywords": ["월세", "자취", "주거", "임차"],
+    "deadline": "2026-12-05",
+    "url": "https://youth.seoul.go.kr",
+    "sample": true
+  },
+  {
+    "policyId": "seoul-youth-moving-2026",
+    "name": "서울시 청년 이사비 지원",
+    "agency": "서울특별시 청년정책과",
+    "year": 2026,
+    "category": "주거",
+    "keywords": ["이사", "이사비", "중개수수료"],
+    "deadline": "2026-11-28",
+    "url": "https://youth.seoul.go.kr",
+    "sample": true
+  },
+  {
+    "policyId": "lh-youth-lease-2026",
+    "name": "LH 청년 전세임대",
+    "agency": "한국토지주택공사",
+    "year": 2026,
+    "category": "주거",
+    "keywords": ["전세", "임대", "LH", "전세임대"],
+    "deadline": "2026-10-31",
+    "url": "https://apply.lh.or.kr",
+    "sample": true
+  },
+  {
+    "policyId": "fsc-youth-future-savings-2026",
+    "name": "청년미래적금",
+    "agency": "금융위원회",
+    "year": 2026,
+    "category": "금융",
+    "keywords": ["적금", "자산", "저축", "미래적금"],
+    "deadline": null,
+    "url": "https://www.fsc.go.kr",
+    "sample": true
+  },
+  {
+    "policyId": "seoul-youth-allowance-2026",
+    "name": "서울시 청년수당",
+    "agency": "서울특별시 청년정책과",
+    "year": 2026,
+    "category": "생활",
+    "keywords": ["청년수당", "구직", "취업준비", "수당"],
+    "deadline": "2026-12-20",
+    "url": "https://youth.seoul.go.kr",
+    "sample": true
+  }
+]

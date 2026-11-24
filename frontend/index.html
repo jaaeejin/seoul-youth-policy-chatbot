@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>서울 청년정책 안내 챗봇 (개발 환경 확인)</title>
+<style>
+  :root { --ink:#1b1f24; --sub:#5b6470; --line:#e3e6ea; --accent:#2f6fde; --bg:#f6f7f9; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif; color:var(--ink); background:var(--bg); }
+  main { max-width:720px; margin:0 auto; padding:32px 20px 60px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  .env { color:var(--sub); font-size:13px; margin-bottom:24px; }
+  section { background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin-bottom:16px; }
+  h2 { font-size:15px; margin:0 0 12px; }
+  pre { margin:0; background:#f1f3f5; border-radius:8px; padding:12px; font-size:12.5px; overflow:auto; white-space:pre-wrap; }
+  form { display:flex; gap:8px; }
+  input { flex:1; padding:10px 12px; border:1px solid var(--line); border-radius:8px; font:inherit; }
+  button { padding:10px 16px; border:0; border-radius:8px; background:var(--accent); color:#fff; font:inherit; cursor:pointer; }
+  .answer { margin-top:14px; line-height:1.6; }
+  .card { border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-top:8px; font-size:14px; }
+  .card b { margin-right:6px; }
+  .badge { display:inline-block; font-size:12px; padding:1px 8px; border-radius:99px; background:#e8f0fe; color:var(--accent); margin-left:6px; }
+  .sample { background:#fff4e5; color:#a15c00; }
+  .notice { color:var(--sub); font-size:13px; margin-top:10px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  td, th { text-align:left; padding:6px 4px; border-bottom:1px solid var(--line); }
+</style>
+</head>
+<body>
+<main>
+  <h1>서울 청년정책 안내 챗봇</h1>
+  <div class="env">2주차 개발 환경 확인 화면 · S3 + CloudFront → API Gateway → Lambda → DynamoDB</div>
+
+  <section>
+    <h2>1. API 상태 (GET /health)</h2>
+    <pre id="health">불러오는 중…</pre>
+  </section>
+
+  <section>
+    <h2>2. 등록된 정책 (GET /policies)</h2>
+    <table><thead><tr><th>정책</th><th>기관</th><th>마감일</th><th>상태</th></tr></thead><tbody id="policies"></tbody></table>
+  </section>
+
+  <section>
+    <h2>3. 질문 보내기 (POST /chat)</h2>
+    <form id="ask">
+      <input id="q" value="자취 시작하는데 월세 지원 있어?" autocomplete="off">
+      <button>보내기</button>
+    </form>
+    <div id="out" class="answer"></div>
+  </section>
+</main>
+<script src="config.js"></script>
+<script>
+  const API = (window.APP_CONFIG && window.APP_CONFIG.apiUrl) || "";
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+  fetch(API + "/health").then(r => r.json())
+    .then(j => $("health").textContent = JSON.stringify(j, null, 2))
+    .catch(e => $("health").textContent = "실패: " + e);
+
+  fetch(API + "/policies").then(r => r.json()).then(j => {
+    $("policies").innerHTML = j.policies.map(p =>
+      `<tr><td>${esc(p.name)}${p.sample ? '<span class="badge sample">예시 문서</span>' : ""}</td>
+       <td>${esc(p.agency)}</td><td>${esc(p.deadline || "-")}</td><td>${esc(p.status)}</td></tr>`).join("");
+  });
+
+  $("ask").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    $("out").textContent = "보내는 중…";
+    const r = await fetch(API + "/chat", {
+      method: "POST", headers: {"content-type": "application/json"},
+      body: JSON.stringify({question: $("q").value})
+    });
+    const j = await r.json();
+    if (!r.ok) { $("out").textContent = j.error || "오류"; return; }
+    $("out").innerHTML = `<div>${esc(j.answer)}</div>` +
+      j.sources.map(s => `<div class="card"><b>[${s.no}]</b>${esc(s.name)} · ${esc(s.agency)} · ${esc(s.year)}
+        <span class="badge">마감 ${esc(s.deadline || "상시")}</span>${s.sample ? '<span class="badge sample">예시 문서</span>' : ""}
+        <div><a href="${esc(s.url)}" target="_blank" rel="noopener">원문 보기</a></div></div>`).join("") +
+      `<div class="notice">${esc(j.notice)} · 응답 ${j.latencyMs}ms</div>`;
+  });
+</script>
+</body>
+</html>
