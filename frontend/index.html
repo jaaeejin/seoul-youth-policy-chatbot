@@ -22,6 +22,7 @@
   .card b { margin-right:6px; }
   .badge { display:inline-block; font-size:12px; padding:1px 8px; border-radius:99px; background:#e8f0fe; color:var(--accent); margin-left:6px; }
   .sample { background:#fff4e5; color:#a15c00; }
+  .closed { background:#eef0f2; color:#5b6470; }
   .notice { color:var(--sub); font-size:13px; margin-top:10px; }
   table { width:100%; border-collapse:collapse; font-size:14px; }
   td, th { text-align:left; padding:6px 4px; border-bottom:1px solid var(--line); }
@@ -78,7 +79,7 @@
     if (!r.ok) { $("out").textContent = j.error || "오류"; return; }
     $("out").innerHTML = `<div>${esc(j.answer)}</div>` +
       j.sources.map(s => `<div class="card"><b>[${s.no}]</b>${esc(s.name)} · ${esc(s.agency)} · ${esc(s.year)}
-        <span class="badge">마감 ${esc(s.deadline || "상시")}</span>${s.sample ? '<span class="badge sample">예시 문서</span>' : ""}
+        <span class="badge${s.status === "마감" ? " closed" : ""}">${s.status === "마감" ? "지난 공고" : esc(s.status)} · ${esc(s.deadline || "상시")}</span>${s.sample ? '<span class="badge sample">예시 문서</span>' : ""}
         <div><a href="${esc(s.url)}" target="_blank" rel="noopener">원문 보기</a></div></div>`).join("") +
       `<div class="notice">${esc(j.notice)} · 응답 ${j.latencyMs}ms</div>`;
   });

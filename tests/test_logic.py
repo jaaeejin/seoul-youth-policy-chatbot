@@ -34,6 +34,19 @@ def test_deadline_status():
     assert policies.deadline_status("2026-12-20", today) == "모집 중"
 
 
+def test_chat_uses_same_deadline_rule():
+    today = date(2026, 11, 24)
+    for d in [None, "2026-11-23", "2026-11-24", "2026-12-01", "2026-12-02"]:
+        assert chat.deadline_status(d, today) == policies.deadline_status(d, today)
+
+
+def test_chat_rejects_bad_body():
+    assert chat.handler({"body": "[1]"}, None)["statusCode"] == 400
+    assert chat.handler({"body": '{"question": 123}'}, None)["statusCode"] == 400
+    assert chat.handler({"body": "{}"}, None)["statusCode"] == 400
+    assert chat.handler({"body": "not json"}, None)["statusCode"] == 400
+
+
 def test_mask_pii():
     s = chat.mask_pii("내 번호 010-1234-5678, 주민번호 990101-1234567, a.b@c.com")
     assert "010" not in s and "990101" not in s and "@" not in s
@@ -42,5 +55,7 @@ def test_mask_pii():
 
 if __name__ == "__main__":
     test_deadline_status()
+    test_chat_uses_same_deadline_rule()
+    test_chat_rejects_bad_body()
     test_mask_pii()
     print("ok")

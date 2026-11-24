@@ -13,6 +13,7 @@ import os
 import re
 import time
 import uuid
+from datetime import date, datetime, timedelta, timezone
 
 import boto3
 
@@ -20,6 +21,7 @@ ddb = boto3.resource("dynamodb")
 POLICIES = ddb.Table(os.environ["POLICIES_TABLE"])
 LOGS = ddb.Table(os.environ["CHATLOGS_TABLE"])
 TTL_DAYS = int(os.environ.get("LOG_TTL_DAYS", "90"))
+KST = timezone(timedelta(hours=9))
 
 PII_PATTERNS = [
     (re.compile(r"\d{6}\s*-\s*[1-4]\d{6}"), "[주민번호]"),
@@ -32,6 +34,18 @@ def mask_pii(text: str) -> str:
     for pat, repl in PII_PATTERNS:
         text = pat.sub(repl, text)
     return text
+
+
+def deadline_status(deadline, today: date) -> str:
+    """신청 마감일로 모집 상태를 정한다 (policies 함수와 같은 규칙)."""
+    if not deadline:
+        return "상시"
+    d = date.fromisoformat(deadline)
+    if d < today:
+        return "마감"
+    if (d - today).days <= 7:
+        return "마감 임박"
+    return "모집 중"
 
 
 def _resp(status, body):
@@ -60,6 +74,8 @@ def handler(event, context):
         body = json.loads(event.get("body") or "{}")
     except json.JSONDecodeError:
         return _resp(400, {"error": "JSON 형식이 아니에요."})
+    if not isinstance(body, dict) or not isinstance(body.get("question", ""), str):
+        return _resp(400, {"error": '{"question": "질문"} 형식으로 보내 주세요.'})
 
     question = (body.get("question") or "").strip()
     if not question:
@@ -70,8 +86,11 @@ def handler(event, context):
     masked = mask_pii(question)
     hits = find_policies(masked)
 
+    today = datetime.now(KST).date()
     if hits:
         answer = "등록된 공고에서 관련 정책을 찾았어요. 자세한 조건은 출처 카드의 원문에서 확인하세요."
+        if any(deadline_status(h.get("deadline"), today) == "마감" for h in hits):
+            answer += " 신청 기간이 지난 공고도 함께 보여 드려요."
         sources = [
             {
                 "no": i + 1,
@@ -79,6 +98,7 @@ def handler(event, context):
                 "agency": h.get("agency"),
                 "year": h.get("year"),
                 "deadline": h.get("deadline"),
+                "status": deadline_status(h.get("deadline"), today),
                 "url": h.get("url"),
                 "sample": h.get("sample", False),
             }

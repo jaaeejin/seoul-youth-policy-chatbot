@@ -3,7 +3,8 @@
 #   git clone https://github.com/jaaeejin/seoul-youth-policy-chatbot.git
 #   cd seoul-youth-policy-chatbot && bash scripts/deploy.sh
 set -euo pipefail
-# CloudShell 기본 로캘에서는 템플릿 한글이 ??로 깨지므로 UTF-8로 읽게 한다
+# CloudShell 기본 로캘에서 한글 출력 · 파일 읽기가 깨지지 않게 UTF-8로 맞춘다
+# (템플릿 Description은 이 설정으로도 ??로 저장돼서 영어로 둔다)
 export AWS_CLI_FILE_ENCODING=UTF-8 LANG=C.UTF-8 LC_ALL=C.UTF-8 PYTHONUTF8=1
 
 REGION="${AWS_REGION:-ap-northeast-2}"
@@ -54,7 +55,8 @@ DIM=1024   # Titan Text Embeddings V2 (template.yaml의 EmbedDimension과 같게
 if ! aws s3vectors get-vector-bucket --vector-bucket-name "$VBUCKET" --region "$REGION" >/dev/null 2>&1; then
   aws s3vectors create-vector-bucket --vector-bucket-name "$VBUCKET" --region "$REGION" >/dev/null
 fi
-CUR_DIM="$(aws s3vectors get-index --vector-bucket-name "$VBUCKET" --index-name "$VINDEX" --region "$REGION"   --query 'index.dimension' --output text 2>/dev/null || echo none)"
+CUR_DIM="$(aws s3vectors get-index --vector-bucket-name "$VBUCKET" --index-name "$VINDEX" --region "$REGION" \
+  --query 'index.dimension' --output text 2>/dev/null || echo none)"
 if [ "$CUR_DIM" != "$DIM" ]; then
   if [ "$CUR_DIM" != "none" ]; then
     # 차원은 바꿀 수 없어서 다시 만든다. 다시 적재하면 되는 단계(3주차 전)에서만 쓴다
@@ -62,9 +64,12 @@ if [ "$CUR_DIM" != "$DIM" ]; then
     aws s3vectors delete-index --vector-bucket-name "$VBUCKET" --index-name "$VINDEX" --region "$REGION"
   fi
   # 코사인 거리. 원문 조각은 검색 필터에 쓰지 않는 메타데이터로 둔다
-  aws s3vectors create-index --vector-bucket-name "$VBUCKET" --index-name "$VINDEX"     --data-type float32 --dimension "$DIM" --distance-metric cosine     --metadata-configuration '{"nonFilterableMetadataKeys":["text"]}' --region "$REGION" >/dev/null
+  aws s3vectors create-index --vector-bucket-name "$VBUCKET" --index-name "$VINDEX" \
+    --data-type float32 --dimension "$DIM" --distance-metric cosine \
+    --metadata-configuration '{"nonFilterableMetadataKeys":["text"]}' --region "$REGION" >/dev/null
 fi
-aws s3vectors get-index --vector-bucket-name "$VBUCKET" --index-name "$VINDEX" --region "$REGION"   --query 'index.{index:indexName,dimension:dimension,metric:distanceMetric}' --output text
+aws s3vectors get-index --vector-bucket-name "$VBUCKET" --index-name "$VINDEX" --region "$REGION" \
+  --query 'index.{index:indexName,dimension:dimension,metric:distanceMetric}' --output text
 
 echo "== 6. 웹 화면 올리기 → ${WEB_BUCKET}"
 printf 'window.APP_CONFIG = { apiUrl: "%s" };\n' "$API_URL" > /tmp/config.js
